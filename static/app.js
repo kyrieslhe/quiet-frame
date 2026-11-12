@@ -1,37 +1,304 @@
 'use strict';
 const $ = s => document.querySelector(s);
-const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-let albums=[], token='', currentPhoto=null, editingAlbum=null, toastTimer, busy=false;
-const fields=[['title','照片名称'],['location','拍摄地点'],['taken_at','拍摄时间'],['camera','相机'],['lens','镜头'],['focal_length','焦距'],['aperture','光圈'],['shutter','快门'],['iso','ISO'],['latitude','纬度'],['longitude','经度'],['notes','照片笔记']];
-function toast(message, duration=4000){clearTimeout(toastTimer);$('#toast').textContent=message;$('#toast').classList.add('show');toastTimer=setTimeout(()=>$('#toast').classList.remove('show'),duration);}
-async function api(path,options={}){const headers={'X-Archive-Token':token,...options.headers};if(options.body && !(options.body instanceof FormData))headers['Content-Type']='application/json';const r=await fetch(path,{...options,headers});const json=await r.json().catch(()=>({}));if(!r.ok)throw new Error(json.error||`操作失败 (${r.status})`);return json;}
-function albumId(){return location.hash.startsWith('#album/')?location.hash.slice(7):null;}
-function currentAlbum(){return albums.find(a=>a.id===albumId());}
-function image(p,cls=''){return `<img ${cls} src="/media/${p.id}" alt="${esc(p.title)}" loading="lazy">`;}
-function dateLabel(date){return date?esc(date.slice(0,10).replaceAll('-','.')):'日期未填写';}
-async function reload(){albums=await api('/api/albums');render();}
-function render(){const count=albums.reduce((n,a)=>n+a.photos.length,0);$('#footer-count').textContent=`${String(albums.length).padStart(2,'0')} COLLECTIONS / ${String(count).padStart(3,'0')} PHOTOGRAPHS`;if(albumId()){const a=currentAlbum();if(a)renderAlbum(a);else{location.hash='';renderHome();}}else renderHome();}
-function renderHome(){
- $('#main').innerHTML=`<section class="intro"><div><span class="eyebrow">A PERSONAL PHOTOGRAPHIC ARCHIVE</span><h1>光阴有迹，<em>留影成集。</em></h1><p>收集光线经过的地方，也收集看见它们的自己。</p></div><button class="primary" id="new-album">新建摄影集 <span>＋</span></button></section><div class="toolbar"><div class="toolbar-left"><span class="label">全部摄影集</span><span class="count">${String(albums.length).padStart(2,'0')}</span></div><input class="search" id="search" aria-label="搜索摄影集" placeholder="搜索名称、地点…"></div><section class="collection-grid" id="collections"></section>`;
- $('#new-album').onclick=()=>openAlbumForm();$('#search').oninput=e=>drawAlbums(e.target.value);drawAlbums('');
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+} [c]));
+let albums = [],
+    token = '',
+    currentPhoto = null,
+    editingAlbum = null,
+    toastTimer, busy = false;
+const fields = [
+    ['title', '照片名称'],
+    ['location', '拍摄地点'],
+    ['taken_at', '拍摄时间'],
+    ['camera', '相机'],
+    ['lens', '镜头'],
+    ['focal_length', '焦距'],
+    ['aperture', '光圈'],
+    ['shutter', '快门'],
+    ['iso', 'ISO'],
+    ['latitude', '纬度'],
+    ['longitude', '经度'],
+    ['notes', '照片笔记']
+];
+
+function toast(message, duration = 4000) {
+    clearTimeout(toastTimer);
+    $('#toast').textContent = message;
+    $('#toast').classList.add('show');
+    toastTimer = setTimeout(() => $('#toast').classList.remove('show'), duration);
 }
-function drawAlbums(query){const shown=albums.filter(a=>(a.title+' '+a.location+' '+a.description).toLowerCase().includes(query.toLowerCase()));$('#collections').innerHTML=albums.length===0?`<div class="empty" style="grid-column:1/-1"><div class="empty-symbol"></div><span class="eyebrow">YOUR FIRST CHAPTER</span><h2>每一集，都从一张照片开始。</h2><p>为一次拍摄建一个集，再放进你喜欢的照片。拍摄信息会自动读取，你也可以随时补充。</p><button class="outline" id="first-album">创建第一本摄影集 <span>↗</span></button><small>本地保存 · 无需账号 · 保留原片</small></div>`:shown.length?shown.map((a,i)=>`<a class="album-card" href="#album/${a.id}"><div class="album-image">${a.photos.length?image(a.photos[0]):'<div class="empty-cover">qf.</div>'}<span class="number">COLLECTION ${String(i+1).padStart(2,'0')}</span><span class="go">↗</span></div><div class="album-meta"><h2>${esc(a.title)}</h2><span>${a.photos.length} 张照片</span></div><div class="album-caption"><span>${esc(a.location)||'地点未填写'}</span><span>／</span><span>${dateLabel(a.date)}</span></div></a>`).join(''):'<p class="no-results">没有找到匹配的摄影集。</p>';if($('#first-album'))$('#first-album').onclick=()=>openAlbumForm();}
-function renderAlbum(a){$('#main').innerHTML=`<div class="breadcrumb"><a href="#">摄影集</a><span>/</span><span>${esc(a.title)}</span></div><section class="intro album-intro"><div><span class="eyebrow">A COLLECTION OF MOMENTS</span><h1>${esc(a.title)}</h1>${a.description?`<p style="white-space:pre-wrap">${esc(a.description)}</p>`:''}<div class="album-details"><span>⌖ ${esc(a.location)||'地点未填写'}</span><span>${dateLabel(a.date)}</span><span>${a.photos.length} PHOTOGRAPHS</span></div></div><div class="album-controls"><button class="text-button" id="edit-album">编辑摄影集</button><button class="primary" id="add-photos">导入照片 <span>＋</span></button></div></section><div class="toolbar"><span class="label">照片 / PHOTOGRAPHS</span><span class="import-status" id="import-status">可将照片拖入此页面</span></div><section class="drop-zone" id="drop-zone">${a.photos.length?`<div class="photo-grid">${a.photos.map(p=>`<button class="photo-card" data-photo="${p.id}">${image(p)}<div class="photo-caption"><span>${esc(p.title)}</span><span>${esc(p.focal_length)} ${esc(p.aperture)}</span></div></button>`).join('')}</div>`:`<div class="empty"><div class="empty-symbol"></div><span class="eyebrow">LET THE STORY BEGIN</span><h2>把这一刻，放进来。</h2><p>拖入照片，或点击下方按钮。自动读取 EXIF 拍摄参数和 GPS；未记录的信息可以手动填写。</p><button class="outline" id="empty-import">选择照片 ↗</button><small>JPG / PNG / WEBP / TIFF · 每批最多 512 MB</small></div>`}</section><button class="text-button danger" id="delete-album" style="margin-top:35px">删除此摄影集</button>`;
- $('#edit-album').onclick=()=>openAlbumForm(a);$('#add-photos').onclick=choosePhotos;if($('#empty-import'))$('#empty-import').onclick=choosePhotos;document.querySelectorAll('[data-photo]').forEach(b=>b.onclick=()=>openPhoto(b.dataset.photo));$('#delete-album').onclick=()=>confirmAction('删除整个摄影集？',`「${a.title}」及其中 ${a.photos.length} 张照片的本地副本将被删除。导入前的源文件不受影响。`,async()=>{await api(`/api/albums/${a.id}`,{method:'DELETE'});location.hash='';await reload();toast('摄影集已删除');});
- const zone=$('#main');zone.ondragover=e=>{if(e.dataTransfer.types.includes('Files')){e.preventDefault();$('#drop-zone')?.classList.add('dragging');}};zone.ondragleave=e=>{if(!zone.contains(e.relatedTarget))$('#drop-zone')?.classList.remove('dragging');};zone.ondrop=e=>{e.preventDefault();$('#drop-zone')?.classList.remove('dragging');importPhotos(e.dataTransfer.files);};
+async function api(path, options = {}) {
+    const headers = {
+        'X-Archive-Token': token,
+        ...options.headers
+    };
+    if (options.body && !(options.body instanceof FormData)) headers['Content-Type'] = 'application/json';
+    const r = await fetch(path, {
+        ...options,
+        headers
+    });
+    const json = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(json.error || `操作失败 (${r.status})`);
+    return json;
 }
-function openAlbumForm(album=null){editingAlbum=album;$('#album-form').reset();$('#album-form-heading').textContent=album?'编辑摄影集':'新建摄影集';$('#album-form-kicker').textContent=album?'EDIT COLLECTION':'NEW COLLECTION';if(album)for(const k of ['title','location','description','date'])$('#album-form').elements[k].value=album[k];$('#album-dialog').showModal();}
-$('#album-form').onsubmit=async e=>{e.preventDefault();const button=e.submitter;button.disabled=true;try{const body=Object.fromEntries(new FormData(e.target));const result=await api(editingAlbum?`/api/albums/${editingAlbum.id}`:'/api/albums',{method:editingAlbum?'PATCH':'POST',body:JSON.stringify(body)});$('#album-dialog').close();await reload();if(!editingAlbum)location.hash=`album/${result.id}`;toast('摄影集已保存');}catch(err){toast(err.message);}finally{button.disabled=false;}};
-function choosePhotos(){if(!busy)$('#file-input').click();}
-$('#file-input').onchange=e=>{importPhotos(e.target.files);e.target.value='';};
-async function importPhotos(files){const a=currentAlbum();if(!a||!files.length||busy)return;const list=Array.from(files);if(list.reduce((s,f)=>s+f.size,0)>512*1024*1024){toast('每批最多 512 MB，请分批导入。');return;}busy=true;const status=$('#import-status');if(status)status.textContent=`正在读取并导入 ${list.length} 张照片…`;toast('正在导入照片，请稍候…',60000);const data=new FormData();list.forEach(f=>data.append('photos',f));try{const result=await api(`/api/albums/${a.id}/photos`,{method:'POST',body:data});await reload();toast(`已导入 ${result.added.length} 张照片${result.errors.length?'；'+result.errors.map(x=>x.filename+'：'+x.error).join('\n'):''}`,result.errors.length?15000:4000);}catch(err){toast(err.message,10000);}finally{busy=false;if($('#import-status'))$('#import-status').textContent='可将照片拖入此页面';}}
-function openPhoto(id){const a=currentAlbum();const p=a?.photos.find(p=>p.id===id);if(!p)return;currentPhoto=p;$('#large-photo').src=`/media/${id}`;$('#large-photo').alt=p.title;$('#photo-heading').textContent=p.title;$('#photo-counter').textContent=`${String(a.photos.indexOf(p)+1).padStart(2,'0')} / ${String(a.photos.length).padStart(2,'0')}`;$('#photo-read').innerHTML=`<dl class="metadata">${fields.filter(([k])=>k!=='title'&&k!=='notes').map(([k,label])=>`<div class="metadata-row"><dt>${label}</dt><dd>${esc(p[k])||'—'}</dd></div>`).join('')}</dl>${p.notes?`<p class="notes">${esc(p.notes)}</p>`:''}`;$('#download-original').href=`/media/${id}?original=1`;$('#photo-form').hidden=true;$('#photo-read').hidden=false;$('#photo-actions').hidden=false;$('#photo-actions').style.display='flex';if(!$('#photo-dialog').open)$('#photo-dialog').showModal();}
-$('#edit-photo').onclick=()=>{const p=currentPhoto;$('#photo-form').innerHTML=fields.map(([k,label])=>`<label>${label}${k==='notes'?`<textarea name="${k}" rows="3">${esc(p[k])}</textarea>`:`<input name="${k}" value="${esc(p[k])}" ${k==='title'?'required':''}>`}</label>`).join('')+'<button class="primary" type="submit">保存修改</button><button type="button" class="text-button" id="cancel-edit" style="margin-top:18px">取消编辑</button>';$('#photo-read').hidden=true;$('#photo-actions').style.display='none';$('#photo-form').hidden=false;$('#cancel-edit').onclick=()=>openPhoto(p.id);};
-$('#photo-form').onsubmit=async e=>{e.preventDefault();try{const id=currentPhoto.id;await api(`/api/photos/${id}`,{method:'PATCH',body:JSON.stringify(Object.fromEntries(new FormData(e.target)))});await reload();openPhoto(id);toast('照片信息已保存');}catch(err){toast(err.message);}};
-function stepPhoto(direction){if(!$('#photo-form').hidden)return;const photos=currentAlbum()?.photos||[];const index=photos.findIndex(p=>p.id===currentPhoto?.id);if(photos.length)openPhoto(photos[(index+direction+photos.length)%photos.length].id);}
-$('#prev').onclick=()=>stepPhoto(-1);$('#next').onclick=()=>stepPhoto(1);document.addEventListener('keydown',e=>{if($('#photo-dialog').open&&!$('#confirm-dialog').open&&!/INPUT|TEXTAREA/.test(e.target.tagName)){if(e.key==='ArrowLeft')stepPhoto(-1);if(e.key==='ArrowRight')stepPhoto(1);}});
-$('#set-cover').onclick=async()=>{try{await api(`/api/photos/${currentPhoto.id}/cover`,{method:'POST'});await reload();openPhoto(currentPhoto.id);toast('已设为封面');}catch(err){toast(err.message);}};
-$('#delete-photo').onclick=()=>{const id=currentPhoto.id;confirmAction('删除这张照片？','将删除档案中的照片副本及其信息。导入前的源文件不受影响。',async()=>{await api(`/api/photos/${id}`,{method:'DELETE'});$('#photo-dialog').close();await reload();toast('照片已删除');});};
-function confirmAction(title,copy,callback){$('#confirm-title').textContent=title;$('#confirm-copy').textContent=copy;$('#confirm-dialog').showModal();$('#confirm-ok').onclick=async()=>{try{await callback();$('#confirm-dialog').close();}catch(err){toast(err.message);}};}
-$('#confirm-cancel').onclick=()=>$('#confirm-dialog').close();document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>b.closest('dialog').close());$('#about-button').onclick=()=>$('#about-dialog').showModal();window.addEventListener('hashchange',()=>{if($('#photo-dialog').open)$('#photo-dialog').close();$('#main').ondragover=null;$('#main').ondrop=null;render();window.scrollTo(0,0);});
-(async()=>{try{token=(await api('/api/session')).token;await reload();}catch(err){$('#main').innerHTML='<p>无法连接本地档案服务，请重新启动留影。</p>';toast(err.message);}})();
+
+function albumId() {
+    return location.hash.startsWith('#album/') ? location.hash.slice(7) : null;
+}
+
+function currentAlbum() {
+    return albums.find(a => a.id === albumId());
+}
+
+function image(p, cls = '') {
+    return `<img ${cls} src="/media/${p.id}" alt="${esc(p.title)}" loading="lazy">`;
+}
+
+function dateLabel(date) {
+    return date ? esc(date.slice(0, 10).replaceAll('-', '.')) : '日期未填写';
+}
+async function reload() {
+    albums = await api('/api/albums');
+    render();
+}
+
+function render() {
+    const count = albums.reduce((n, a) => n + a.photos.length, 0);
+    $('#footer-count').textContent = `${String(albums.length).padStart(2,'0')} COLLECTIONS / ${String(count).padStart(3,'0')} PHOTOGRAPHS`;
+    if (albumId()) {
+        const a = currentAlbum();
+        if (a) renderAlbum(a);
+        else {
+            location.hash = '';
+            renderHome();
+        }
+    } else renderHome();
+}
+
+function renderHome() {
+    $('#main').innerHTML = `<section class="intro"><div><span class="eyebrow">A PERSONAL PHOTOGRAPHIC ARCHIVE</span><h1>光阴有迹，<em>留影成集。</em></h1><p>收集光线经过的地方，也收集看见它们的自己。</p></div><button class="primary" id="new-album">新建摄影集 <span>＋</span></button></section><div class="toolbar"><div class="toolbar-left"><span class="label">全部摄影集</span><span class="count">${String(albums.length).padStart(2,'0')}</span></div><input class="search" id="search" aria-label="搜索摄影集" placeholder="搜索名称、地点…"></div><section class="collection-grid" id="collections"></section>`;
+    $('#new-album').onclick = () => openAlbumForm();
+    $('#search').oninput = e => drawAlbums(e.target.value);
+    drawAlbums('');
+}
+
+function drawAlbums(query) {
+    const shown = albums.filter(a => (a.title + ' ' + a.location + ' ' + a.description).toLowerCase().includes(query.toLowerCase()));
+    $('#collections').innerHTML = albums.length === 0 ? `<div class="empty" style="grid-column:1/-1"><div class="empty-symbol"></div><span class="eyebrow">YOUR FIRST CHAPTER</span><h2>每一集，都从一张照片开始。</h2><p>为一次拍摄建一个集，再放进你喜欢的照片。拍摄信息会自动读取，你也可以随时补充。</p><button class="outline" id="first-album">创建第一本摄影集 <span>↗</span></button><small>本地保存 · 无需账号 · 保留原片</small></div>` : shown.length ? shown.map((a, i) => `<a class="album-card" href="#album/${a.id}"><div class="album-image">${a.photos.length?image(a.photos[0]):'<div class="empty-cover">qf.</div>'}<span class="number">COLLECTION ${String(i+1).padStart(2,'0')}</span><span class="go">↗</span></div><div class="album-meta"><h2>${esc(a.title)}</h2><span>${a.photos.length} 张照片</span></div><div class="album-caption"><span>${esc(a.location)||'地点未填写'}</span><span>／</span><span>${dateLabel(a.date)}</span></div></a>`).join('') : '<p class="no-results">没有找到匹配的摄影集。</p>';
+    if ($('#first-album')) $('#first-album').onclick = () => openAlbumForm();
+}
+
+function renderAlbum(a) {
+    $('#main').innerHTML = `<div class="breadcrumb"><a href="#">摄影集</a><span>/</span><span>${esc(a.title)}</span></div><section class="intro album-intro"><div><span class="eyebrow">A COLLECTION OF MOMENTS</span><h1>${esc(a.title)}</h1>${a.description?`<p style="white-space:pre-wrap">${esc(a.description)}</p>`:''}<div class="album-details"><span>⌖ ${esc(a.location)||'地点未填写'}</span><span>${dateLabel(a.date)}</span><span>${a.photos.length} PHOTOGRAPHS</span></div></div><div class="album-controls"><button class="text-button" id="edit-album">编辑摄影集</button><button class="primary" id="add-photos">导入照片 <span>＋</span></button></div></section><div class="toolbar"><span class="label">照片 / PHOTOGRAPHS</span><span class="import-status" id="import-status">可将照片拖入此页面</span></div><section class="drop-zone" id="drop-zone">${a.photos.length?`<div class="photo-grid">${a.photos.map(p=>`<button class="photo-card" data-photo="${p.id}">${image(p)}<div class="photo-caption"><span>${esc(p.title)}</span><span>${esc(p.focal_length)} ${esc(p.aperture)}</span></div></button>`).join('')}</div>`:`<div class="empty"><div class="empty-symbol"></div><span class="eyebrow">LET THE STORY BEGIN</span><h2>把这一刻，放进来。</h2><p>拖入照片，或点击下方按钮。自动读取 EXIF 拍摄参数和 GPS；未记录的信息可以手动填写。</p><button class="outline" id="empty-import">选择照片 ↗</button><small>JPG / PNG / WEBP / TIFF · 每批最多 512 MB</small></div>`}</section><button class="text-button danger" id="delete-album" style="margin-top:35px">删除此摄影集</button>`;
+    $('#edit-album').onclick = () => openAlbumForm(a);
+    $('#add-photos').onclick = choosePhotos;
+    if ($('#empty-import')) $('#empty-import').onclick = choosePhotos;
+    document.querySelectorAll('[data-photo]').forEach(b => b.onclick = () => openPhoto(b.dataset.photo));
+    $('#delete-album').onclick = () => confirmAction('删除整个摄影集？', `「${a.title}」及其中 ${a.photos.length} 张照片的本地副本将被删除。导入前的源文件不受影响。`, async () => {
+        await api(`/api/albums/${a.id}`, {
+            method: 'DELETE'
+        });
+        location.hash = '';
+        await reload();
+        toast('摄影集已删除');
+    });
+    const zone = $('#main');
+    zone.ondragover = e => {
+        if (e.dataTransfer.types.includes('Files')) {
+            e.preventDefault();
+            $('#drop-zone')?.classList.add('dragging');
+        }
+    };
+    zone.ondragleave = e => {
+        if (!zone.contains(e.relatedTarget)) $('#drop-zone')?.classList.remove('dragging');
+    };
+    zone.ondrop = e => {
+        e.preventDefault();
+        $('#drop-zone')?.classList.remove('dragging');
+        importPhotos(e.dataTransfer.files);
+    };
+}
+
+function openAlbumForm(album = null) {
+    editingAlbum = album;
+    $('#album-form').reset();
+    $('#album-form-heading').textContent = album ? '编辑摄影集' : '新建摄影集';
+    $('#album-form-kicker').textContent = album ? 'EDIT COLLECTION' : 'NEW COLLECTION';
+    if (album)
+        for (const k of ['title', 'location', 'description', 'date']) $('#album-form').elements[k].value = album[k];
+    $('#album-dialog').showModal();
+}
+$('#album-form').onsubmit = async e => {
+    e.preventDefault();
+    const button = e.submitter;
+    button.disabled = true;
+    try {
+        const body = Object.fromEntries(new FormData(e.target));
+        const result = await api(editingAlbum ? `/api/albums/${editingAlbum.id}` : '/api/albums', {
+            method: editingAlbum ? 'PATCH' : 'POST',
+            body: JSON.stringify(body)
+        });
+        $('#album-dialog').close();
+        await reload();
+        if (!editingAlbum) location.hash = `album/${result.id}`;
+        toast('摄影集已保存');
+    } catch (err) {
+        toast(err.message);
+    } finally {
+        button.disabled = false;
+    }
+};
+
+function choosePhotos() {
+    if (!busy) $('#file-input').click();
+}
+$('#file-input').onchange = e => {
+    importPhotos(e.target.files);
+    e.target.value = '';
+};
+async function importPhotos(files) {
+    const a = currentAlbum();
+    if (!a || !files.length || busy) return;
+    const list = Array.from(files);
+    if (list.reduce((s, f) => s + f.size, 0) > 512 * 1024 * 1024) {
+        toast('每批最多 512 MB，请分批导入。');
+        return;
+    }
+    busy = true;
+    const status = $('#import-status');
+    if (status) status.textContent = `正在读取并导入 ${list.length} 张照片…`;
+    toast('正在导入照片，请稍候…', 60000);
+    const data = new FormData();
+    list.forEach(f => data.append('photos', f));
+    try {
+        const result = await api(`/api/albums/${a.id}/photos`, {
+            method: 'POST',
+            body: data
+        });
+        await reload();
+        toast(`已导入 ${result.added.length} 张照片${result.errors.length?'；'+result.errors.map(x=>x.filename+'：'+x.error).join('\n'):''}`, result.errors.length ? 15000 : 4000);
+    } catch (err) {
+        toast(err.message, 10000);
+    } finally {
+        busy = false;
+        if ($('#import-status')) $('#import-status').textContent = '可将照片拖入此页面';
+    }
+}
+
+function openPhoto(id) {
+    const a = currentAlbum();
+    const p = a?.photos.find(p => p.id === id);
+    if (!p) return;
+    currentPhoto = p;
+    $('#large-photo').src = `/media/${id}`;
+    $('#large-photo').alt = p.title;
+    $('#photo-heading').textContent = p.title;
+    $('#photo-counter').textContent = `${String(a.photos.indexOf(p)+1).padStart(2,'0')} / ${String(a.photos.length).padStart(2,'0')}`;
+    $('#photo-read').innerHTML = `<dl class="metadata">${fields.filter(([k])=>k!=='title'&&k!=='notes').map(([k,label])=>`<div class="metadata-row"><dt>${label}</dt><dd>${esc(p[k])||'—'}</dd></div>`).join('')}</dl>${p.notes?`<p class="notes">${esc(p.notes)}</p>`:''}`;
+    $('#download-original').href = `/media/${id}?original=1`;
+    $('#photo-form').hidden = true;
+    $('#photo-read').hidden = false;
+    $('#photo-actions').hidden = false;
+    $('#photo-actions').style.display = 'flex';
+    if (!$('#photo-dialog').open) $('#photo-dialog').showModal();
+}
+$('#edit-photo').onclick = () => {
+    const p = currentPhoto;
+    $('#photo-form').innerHTML = fields.map(([k, label]) => `<label>${label}${k==='notes'?`<textarea name="${k}" rows="3">${esc(p[k])}</textarea>`:`<input name="${k}" value="${esc(p[k])}" ${k==='title'?'required':''}>`}</label>`).join('') + '<button class="primary" type="submit">保存修改</button><button type="button" class="text-button" id="cancel-edit" style="margin-top:18px">取消编辑</button>';
+    $('#photo-read').hidden = true;
+    $('#photo-actions').style.display = 'none';
+    $('#photo-form').hidden = false;
+    $('#cancel-edit').onclick = () => openPhoto(p.id);
+};
+$('#photo-form').onsubmit = async e => {
+    e.preventDefault();
+    try {
+        const id = currentPhoto.id;
+        await api(`/api/photos/${id}`, {
+            method: 'PATCH',
+            body: JSON.stringify(Object.fromEntries(new FormData(e.target)))
+        });
+        await reload();
+        openPhoto(id);
+        toast('照片信息已保存');
+    } catch (err) {
+        toast(err.message);
+    }
+};
+
+function stepPhoto(direction) {
+    if (!$('#photo-form').hidden) return;
+    const photos = currentAlbum()?.photos || [];
+    const index = photos.findIndex(p => p.id === currentPhoto?.id);
+    if (photos.length) openPhoto(photos[(index + direction + photos.length) % photos.length].id);
+}
+$('#prev').onclick = () => stepPhoto(-1);
+$('#next').onclick = () => stepPhoto(1);
+document.addEventListener('keydown', e => {
+    if ($('#photo-dialog').open && !$('#confirm-dialog').open && !/INPUT|TEXTAREA/.test(e.target.tagName)) {
+        if (e.key === 'ArrowLeft') stepPhoto(-1);
+        if (e.key === 'ArrowRight') stepPhoto(1);
+    }
+});
+$('#set-cover').onclick = async () => {
+    try {
+        await api(`/api/photos/${currentPhoto.id}/cover`, {
+            method: 'POST'
+        });
+        await reload();
+        openPhoto(currentPhoto.id);
+        toast('已设为封面');
+    } catch (err) {
+        toast(err.message);
+    }
+};
+$('#delete-photo').onclick = () => {
+    const id = currentPhoto.id;
+    confirmAction('删除这张照片？', '将删除档案中的照片副本及其信息。导入前的源文件不受影响。', async () => {
+        await api(`/api/photos/${id}`, {
+            method: 'DELETE'
+        });
+        $('#photo-dialog').close();
+        await reload();
+        toast('照片已删除');
+    });
+};
+
+function confirmAction(title, copy, callback) {
+    $('#confirm-title').textContent = title;
+    $('#confirm-copy').textContent = copy;
+    $('#confirm-dialog').showModal();
+    $('#confirm-ok').onclick = async () => {
+        try {
+            await callback();
+            $('#confirm-dialog').close();
+        } catch (err) {
+            toast(err.message);
+        }
+    };
+}
+$('#confirm-cancel').onclick = () => $('#confirm-dialog').close();
+document.querySelectorAll('[data-close]').forEach(b => b.onclick = () => b.closest('dialog').close());
+$('#about-button').onclick = () => $('#about-dialog').showModal();
+window.addEventListener('hashchange', () => {
+    if ($('#photo-dialog').open) $('#photo-dialog').close();
+    $('#main').ondragover = null;
+    $('#main').ondrop = null;
+    render();
+    window.scrollTo(0, 0);
+});
+(async () => {
+    try {
+        token = (await api('/api/session')).token;
+        await reload();
+    } catch (err) {
+        $('#main').innerHTML = '<p>无法连接本地档案服务，请重新启动留影。</p>';
+        toast(err.message);
+    }
+})();
