@@ -1,0 +1,7 @@
+-r requirements.txt
+pywebview==5.4
+pyobjc-core==11.1; sys_platform == 'darwin'
+pyobjc-framework-Cocoa==11.1; sys_platform == 'darwin'
+pyobjc-framework-Security==11.1; sys_platform == 'darwin'
+pyobjc-framework-WebKit==11.1; sys_platform == 'darwin'
+pyobjc-framework-Quartz==11.1; sys_platform == 'darwin'

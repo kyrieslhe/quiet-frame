@@ -1,62 +1,76 @@
 # Quiet Frame · 留影
 
-A private photographic archive for your own computer. Organize shoots into collections, keep original files, and view or edit locations and EXIF metadata.
+A **local desktop photo manager that references original paths**. Native window and system file pickers. No browser launch, original-file duplication, or cloud uploads.
 
 English · [中文](README.md)
 
-![Quiet Frame](docs/preview.png)
+![Desktop interface](docs/preview.png)
 
-## Start
+## Launch
 
-Requires **Python 3.9+**. The first launch downloads Python dependencies. Subsequent launches work offline; Node.js and online accounts are unnecessary.
+The macOS Apple Silicon package includes the runtime and needs no Python installation. Running from source requires Python 3.9+ and internet access for initial dependencies.
 
-- **macOS:** double-click `启动留影.command`. If macOS blocks it, run `bash 启动留影.command` from the project folder.
-- **Windows:** install Python with Python Launcher, then double-click `start.bat`.
-- **Linux:** run `sh start.sh`.
+- **macOS:** download `quiet-frame-macos-arm64.zip` from Releases, extract and double-click `留影.app`. You can move it to Applications. To run from source, use `启动留影.command`. The local app is not Apple-notarized; macOS may require approval in Privacy & Security.
+- **Windows:** install Python with Python Launcher, then run `start.bat`. Requires WebView2.
+- **Linux:** run `sh start.sh` with GTK/Qt support. For Qt, install `PyQt5 PyQtWebEngine qtpy` in the virtual environment.
 
-The browser opens at <http://127.0.0.1:47321>. Press `Ctrl+C` in the launch terminal to stop the server. Windows and Linux launch scripts have not been tested on their respective operating systems.
+The macOS native window has been tested. Windows/Linux scripts have not been tested on their respective systems. Closing the window stops the internal service. A second macOS launch focuses the existing window.
 
-## Features
+## Workflow
 
-- Collections with editable titles, dates, locations and notes.
-- Batch import or drag and drop JPEG, PNG, WebP and TIFF (up to 512 MB per request). Export HEIC / RAW as JPEG first.
-- Automatic EXIF parsing: camera, lens, focal length, aperture, shutter, ISO, date and GPS.
-- Editable metadata stored separately; original files remain unchanged.
-- Gallery and index layouts, grid and sequence browsing, full-size viewer with arrow-key navigation.
-- Complete Chinese / English interface. Your own titles and notes retain their original language.
-- Light and dark themes. Initially follows the operating system; a manual choice is remembered. Photographs are never recolored.
-- Download originals, choose collection covers and export a ZIP backup.
+Choose Add photographs or press Cmd/Ctrl+O. Select files or a folder, optionally including subfolders. Absolute file paths can also be pasted manually, one per line. Adding from All photographs creates a collection; adding while a collection is selected uses that collection.
 
-No tracking, remote scripts, external fonts or geocoding. GPS is displayed as editable coordinates rather than automatically looked-up place names. Missing EXIF is left blank. Camera timestamps are shown as recorded, without inferred time zones.
+Single-click for the inspector, double-click or Enter for the viewer. Edit metadata, set covers, reveal originals in their folder, relink files, or remove catalog records. Persistent Chinese/English and light/dark themes are included. Adjustable thumbnail grid/list, without a website landing page or bundled sample photographs.
 
-The first-run photograph is explicitly labeled as an Unsplash sample. Your own collections replace it. It is not imported into the archive or assigned fictional metadata. See [third-party notices](THIRD_PARTY_NOTICES.md).
+JPEG, PNG, WebP and TIFF are supported. Export HEIC/RAW as JPEG first. EXIF includes camera, lens, focal length, aperture, shutter, ISO, date and GPS. Missing fields stay blank. GPS is editable coordinates without online geocoding; timestamps are shown as recorded.
 
-## Storage and backup
+## Referenced files
 
-`data/archive.sqlite3` stores collection records and metadata; `data/originals/` holds imported copies; `data/previews/` holds generated JPEG previews. The entire `data/` directory is ignored by Git.
+The app stores absolute source paths, collection information, editable metadata and JPEG previews (long edge up to 2400 pixels). It never copies new originals or writes metadata into them. Duplicate paths within the same collection are skipped.
 
-The simplest complete backup is to stop the server and copy `data/`. To restore, stop the server and put the saved directory back. ZIP export includes `archive.sql`, originals and previews. Export after imports or deletions finish. For very large archives, copy the data directory rather than creating an in-memory ZIP.
+Moved/renamed files or disconnected drives appear offline; cached previews remain viewable. Relink to a new location without losing edited metadata. Refresh checks source availability; there is no continuous watcher or automatic discovery.
 
-To restore a ZIP, extract it to a new `restored/` folder and run:
+**Removing a photograph or collection only removes records and preview caches. Source files are never deleted.**
+
+Old copy-based records are automatically migrated to paths pointing at the existing `data/originals/` copies. Those copies are retained. Relink to your true originals if desired; the app never guesses or deletes old copies.
+
+## Backup
+
+The packaged macOS app stores data in `~/Library/Application Support/Quiet Frame/`. The source version uses the project’s `data/` directory, ignored by Git. `archive.sqlite3` stores records and paths; `previews/` stores caches; `window-state/` stores preferences. The two versions use separate directories: close both apps before copying an existing catalog between them. Old databases are migrated on startup.
+
+Back up catalog opens a native save dialog and exports SQL, paths and previews, **not originals**. Back up originals separately. Alternatively, close the app and copy `data/`.
+
+Restore a trusted ZIP into a new `restored/` folder, then run:
 
 ```sh
 python3 -c "import sqlite3,pathlib; p=pathlib.Path('restored'); c=sqlite3.connect(p/'archive.sqlite3'); c.executescript((p/'archive.sql').read_text(encoding='utf-8')); c.close()"
 ```
 
-Keep a copy of your current `data/` folder before replacing it with `restored/`. Only restore trusted backups.
+With the app closed, preserve the existing `data/` and replace it with `restored/`. Originals must remain at their original paths or be relinked.
 
 ## Development
 
 ```sh
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
-python app.py
+pip install -r requirements-desktop.txt
+python desktop.py
 python -m unittest discover -s tests -v
 ```
 
-`PORT` changes the port; `QUIET_FRAME_DATA` sets an alternate data directory; `--no-browser` skips opening the browser. Python, Flask, SQLite, Pillow and buildless HTML/CSS/JavaScript. The server only listens on loopback and validates Host and write tokens. Intended for local, single-user use.
+pywebview provides the desktop shell and dialogs. Flask, SQLite and Pillow power the local catalog; HTML/CSS/JS are embedded UI. The internal API listens on loopback, validates Host and protects writes with a token. No website deployment or multi-user features.
+
+`QUIET_FRAME_DATA` sets the data directory. `PORT` changes the internal port (default 47321). `python app.py` is only a developer UI preview. Native dialogs require the desktop app.
+
+## Build the macOS application
+
+```sh
+pip install -r requirements-build.txt
+sh build-macos.sh
+```
+
+The output is `dist/留影.app`, including Python and dependencies, without personal data. The provided binary targets Apple Silicon.
 
 ## License
 
-Code: MIT. The bundled sample photograph and screenshots containing it are subject to the Unsplash License. See [LICENSE](LICENSE) and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+MIT. Do not commit private catalog data, photographs or screenshots containing private source paths.

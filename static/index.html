@@ -1,50 +1,33 @@
 <!doctype html>
 <html lang="zh-CN">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="color-scheme" content="light dark">
-  <script>const savedTheme=localStorage.getItem("quiet-frame-theme");document.documentElement.dataset.theme=savedTheme || (matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");</script>
-  <title>留影 — Quiet Frame</title>
-  <link rel="icon" type="image/svg+xml" href="/static/icon.svg">
-  <link rel="stylesheet" href="/static/style.css">
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark">
+  <script>const savedTheme=localStorage.getItem('quiet-frame-theme');document.documentElement.dataset.theme=savedTheme||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');</script>
+  <title>留影 · Quiet Frame</title><link rel="icon" href="/static/icon.svg" type="image/svg+xml"><link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-  <header class="sidebar">
-    <a class="brand" href="#" aria-label="Quiet Frame"><span>Quiet<br>Frame<span class="brand-dot">.</span></span><span class="brand-cn">留影</span></a>
-    <nav class="primary-nav" data-aria="navigation">
-      <a href="#" id="home-link" class="active"><span data-i18n="works"></span><span class="nav-count" id="nav-count">00</span></a>
-      <button id="about-button" data-i18n="about"></button>
-    </nav>
-    <nav class="series-nav" id="series-nav" data-aria="works"></nav>
-    <div class="sidebar-bottom">
-      <div class="theme-switch" data-aria="appearance"><button id="theme-light" data-theme-choice="light" aria-pressed="true"><i class="light-swatch"></i><span data-i18n="light"></span></button><button id="theme-dark" data-theme-choice="dark" aria-pressed="false"><i class="dark-swatch"></i><span data-i18n="dark"></span></button></div>
-      <div class="language" data-aria="language"><button id="lang-zh" lang="zh" aria-pressed="true">中文</button><span>/</span><button id="lang-en" lang="en" aria-pressed="false">EN</button></div>
-      <a class="backup" href="/api/backup" data-i18n="backup"></a>
-      <span class="local"><i></i><span data-i18n="local"></span></span>
-    </div>
-  </header>
-  <div class="content"><main id="main"></main><footer><span>© QUIET FRAME</span><span data-i18n="footer"></span><span id="footer-count"></span></footer></div>
-  <dialog id="album-dialog">
-    <form id="album-form">
-      <div class="dialog-head"><span class="eyebrow" data-i18n="collection"></span><button type="button" class="close" data-close data-aria="close">×</button></div>
-      <h2 id="album-form-heading"></h2>
-      <label><span data-i18n="albumTitle"></span><input name="title" data-placeholder="albumPlaceholder" required maxlength="200"></label>
-      <div class="form-row"><label><span data-i18n="location"></span><input name="location" data-placeholder="locationPlaceholder"></label><label><span data-i18n="date"></span><input name="date" type="date"></label></div>
-      <label><span data-i18n="description"></span><textarea name="description" rows="3" data-placeholder="descriptionPlaceholder"></textarea></label>
-      <button class="primary" type="submit"><span data-i18n="saveAlbum"></span><span>↗</span></button>
-    </form>
-  </dialog>
-  <dialog id="photo-dialog" class="photo-dialog">
-    <div class="lightbox">
-      <div class="photo-stage"><button class="close lightbox-close" data-close data-aria="close">×</button><button class="arrow prev" id="prev" data-aria="previous">←</button><img id="large-photo" alt=""><button class="arrow next" id="next" data-aria="next">→</button><span id="photo-counter"></span></div>
-      <aside><div class="dialog-head"><span class="eyebrow" data-i18n="photoDetails"></span></div><h2 id="photo-heading"></h2><div id="photo-read"></div><form id="photo-form" hidden></form><div id="photo-actions"><button class="outline" id="edit-photo" data-i18n="editPhoto"></button><button class="text-button" id="set-cover" data-i18n="setCover"></button><a id="download-original" class="text-button" data-i18n="download"></a><button class="text-button danger" id="delete-photo" data-i18n="deletePhoto"></button></div></aside>
-    </div>
-  </dialog>
-  <dialog id="about-dialog"><div class="dialog-head"><span class="eyebrow">QUIET FRAME / 留影</span><button class="close" data-close data-aria="close">×</button></div><h2 data-i18n="aboutTitle"></h2><p data-i18n="aboutIntro"></p><p data-i18n="aboutFormats"></p><p data-i18n="aboutGps"></p><p data-i18n="aboutBackup"></p><a href="https://github.com/kyrieslhe/quiet-frame" target="_blank" rel="noreferrer" class="about-source">GITHUB ↗</a><small>OPEN SOURCE · MIT LICENSE</small></dialog>
+  <div class="app-shell">
+    <header class="sidebar">
+      <div class="app-brand"><span class="app-icon">q.</span><div><strong data-i18n="appName"></strong><small>QUIET FRAME</small></div></div>
+      <div class="sidebar-section-label" data-i18n="library"></div>
+      <button id="home-link" class="nav-item active"><span class="nav-symbol">▦</span><span data-i18n="allPhotos"></span><span id="nav-count" class="nav-count"></span></button>
+      <div class="sidebar-section-heading"><span data-i18n="works"></span><button id="new-album" class="icon-button" data-aria="newAlbum">＋</button></div>
+      <nav class="series-nav" id="series-nav" data-aria="works"></nav>
+      <div class="sidebar-bottom">
+        <div class="theme-switch" data-aria="appearance"><button id="theme-light" data-theme-choice="light"><span>◯</span><span data-i18n="light"></span></button><button id="theme-dark" data-theme-choice="dark"><span>◐</span><span data-i18n="dark"></span></button></div>
+        <div class="language"><button id="lang-zh" lang="zh">中文</button><span>/</span><button id="lang-en" lang="en">EN</button></div>
+        <button class="text-button" id="backup-button" data-i18n="backup"></button><button class="text-button" id="about-button" data-i18n="about"></button>
+        <span class="local"><i></i><span data-i18n="local"></span></span>
+      </div>
+    </header>
+    <div class="content"><div id="main" class="workspace"></div><div class="statusbar"><span id="footer-count"></span><span id="app-status" data-i18n="referenceMode"></span></div></div>
+    <aside class="inspector" id="inspector"></aside>
+  </div>
+  <dialog id="album-dialog"><form id="album-form"><div class="dialog-head"><span class="eyebrow" data-i18n="collection"></span><button type="button" class="close" data-close data-aria="close">×</button></div><h2 id="album-form-heading"></h2><label><span data-i18n="albumTitle"></span><input name="title" data-placeholder="albumPlaceholder" required maxlength="200"></label><div class="form-row"><label><span data-i18n="location"></span><input name="location" data-placeholder="locationPlaceholder"></label><label><span data-i18n="date"></span><input name="date" type="date"></label></div><label><span data-i18n="description"></span><textarea name="description" rows="3" data-placeholder="descriptionPlaceholder"></textarea></label><button class="primary" type="submit" data-i18n="saveAlbum"></button></form></dialog>
+  <dialog id="import-dialog"><div class="dialog-head"><span class="eyebrow" data-i18n="referenceMode"></span><button class="close" data-close data-aria="close">×</button></div><h2 data-i18n="addPhotos"></h2><p data-i18n="referenceHelp"></p><div class="import-picker-buttons"><button class="primary" id="pick-files" data-i18n="choose"></button><button class="outline" id="pick-folder" data-i18n="chooseFolder"></button></div><label class="checkbox-label"><input type="checkbox" id="recursive"><span data-i18n="recursive"></span></label><details><summary data-i18n="enterPaths"></summary><label><span data-i18n="pathHelp"></span><textarea id="path-input" rows="4" placeholder="/Volumes/Photos/2026/photo.jpg"></textarea></label><button class="outline" id="add-paths" data-i18n="addReferences"></button></details><p class="import-progress" id="import-progress" aria-live="polite"></p><div id="import-errors" class="import-errors"></div></dialog>
+  <dialog id="relink-dialog"><div class="dialog-head"><span class="eyebrow" data-i18n="sourceFile"></span><button class="close" data-close data-aria="close">×</button></div><h2 data-i18n="relink"></h2><p data-i18n="relinkHelp"></p><button class="primary" id="pick-relink" data-i18n="choose"></button><label><span data-i18n="sourcePath"></span><input id="relink-path" placeholder="/Volumes/Photos/photo.jpg"></label><button class="outline" id="save-relink" data-i18n="relink"></button></dialog>
+  <dialog id="photo-dialog" class="photo-dialog"><div class="lightbox"><div class="photo-stage"><button class="close lightbox-close" data-close data-aria="close">×</button><button class="arrow prev" id="prev" data-aria="previous">←</button><img id="large-photo" alt=""><button class="arrow next" id="next" data-aria="next">→</button><span id="photo-counter"></span></div><aside><div class="dialog-head"><span class="eyebrow" data-i18n="photoDetails"></span></div><h2 id="photo-heading"></h2><div id="photo-read"></div><form id="photo-form" hidden></form><div id="photo-actions"><button class="outline" id="edit-photo" data-i18n="editPhoto"></button><button class="text-button" id="set-cover" data-i18n="setCover"></button><button class="text-button" id="reveal-photo" data-i18n="reveal"></button><button class="text-button" id="relink-photo" data-i18n="relink"></button><button class="text-button danger" id="delete-photo" data-i18n="deletePhoto"></button></div></aside></div></dialog>
+  <dialog id="about-dialog"><div class="dialog-head"><span class="eyebrow">QUIET FRAME</span><button class="close" data-close data-aria="close">×</button></div><h2 data-i18n="aboutTitle"></h2><p data-i18n="aboutIntro"></p><p data-i18n="aboutFormats"></p><p data-i18n="aboutGps"></p><p data-i18n="aboutBackup"></p><button id="project-button" class="text-button">GitHub ↗</button><small>OPEN SOURCE · MIT LICENSE</small></dialog>
   <dialog id="confirm-dialog"><h2 id="confirm-title"></h2><p id="confirm-copy"></p><div class="confirm-actions"><button class="outline" id="confirm-cancel" data-i18n="cancel"></button><button class="primary danger-bg" id="confirm-ok" data-i18n="delete"></button></div></dialog>
-  <input type="file" id="file-input" multiple accept="image/jpeg,image/png,image/webp,image/tiff" hidden>
-  <div id="toast" role="status" aria-live="polite"></div>
-  <script src="/static/i18n.js"></script><script src="/static/app.js"></script>
-</body>
-</html>
+  <div id="toast" role="status" aria-live="polite"></div><script src="/static/i18n.js"></script><script src="/static/desktop-i18n.js"></script><script src="/static/app.js"></script>
+</body></html>

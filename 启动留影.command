@@ -9,12 +9,8 @@ fi
 if [ ! -x .venv/bin/python ]; then
   python3 -m venv .venv
 fi
-if ! .venv/bin/python -c 'import flask, PIL' >/dev/null 2>&1; then
+if ! .venv/bin/python -c 'import flask, PIL, webview' >/dev/null 2>&1; then
   echo '首次启动：安装依赖（需要网络）…'
-  .venv/bin/python -m pip install -r requirements.txt || { read -r -p '安装失败，按回车退出…'; exit 1; }
+  .venv/bin/python -m pip install -r requirements-desktop.txt || { read -r -p '安装失败，按回车退出…'; exit 1; }
 fi
-if curl -fsS http://127.0.0.1:47321/api/session >/dev/null 2>&1; then
-  open http://127.0.0.1:47321
-  exit 0
-fi
-.venv/bin/python app.py
+.venv/bin/python desktop.py
