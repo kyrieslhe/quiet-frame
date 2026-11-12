@@ -1,11 +1,50 @@
 <!doctype html>
-<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><title>留影 · Quiet Frame</title><link rel="stylesheet" href="/static/style.css"></head>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <script>const savedTheme=localStorage.getItem("quiet-frame-theme");document.documentElement.dataset.theme=savedTheme || (matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");</script>
+  <title>留影 — Quiet Frame</title>
+  <link rel="icon" type="image/svg+xml" href="/static/icon.svg">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
 <body>
-<header><a class="brand" href="#" aria-label="留影首页"><span class="brand-mark">qf.</span><span>留影<span class="brand-sub">QUIET FRAME</span></span></a><nav><a href="#" id="home-link" class="active">摄影集</a><button class="text-button" id="about-button">关于留影</button></nav><div class="header-end"><span class="local"><i></i> 本地私人档案</span><a class="backup" href="/api/backup" title="下载含原片和数据的 ZIP 备份">备份档案 ↗</a></div></header>
-<main id="main"></main>
-<footer><span>QUIET FRAME / 留影</span><span>为值得留下的瞬间，留一点空间。</span><span id="footer-count">LOCAL ARCHIVE</span></footer>
-<dialog id="album-dialog"><form id="album-form"><div class="dialog-head"><span class="eyebrow" id="album-form-kicker">NEW COLLECTION</span><button type="button" class="close" data-close aria-label="关闭">×</button></div><h2 id="album-form-heading">新建摄影集</h2><p class="muted">一次出行、一个主题，或一段时间里的观察。</p><label>摄影集名称<input name="title" placeholder="例如：雨后的香港" required maxlength="200"></label><div class="form-row"><label>拍摄地点<input name="location" placeholder="城市，或一个具体的角落"></label><label>拍摄日期<input name="date" type="date"></label></div><label>关于这一集<textarea name="description" rows="3" placeholder="写下当时的光线、天气，或你想记住的事。"></textarea></label><button class="primary" type="submit">保存摄影集 <span>↗</span></button></form></dialog>
-<dialog id="photo-dialog" class="photo-dialog"><div class="lightbox"><div class="photo-stage"><button class="close lightbox-close" data-close aria-label="关闭大图">×</button><button class="arrow prev" id="prev" aria-label="上一张">←</button><img id="large-photo" alt=""><button class="arrow next" id="next" aria-label="下一张">→</button><span id="photo-counter"></span></div><aside><div class="dialog-head"><span class="eyebrow">THE PHOTOGRAPH</span><button type="button" class="close mobile-close" data-close aria-label="关闭">×</button></div><h2 id="photo-heading"></h2><div id="photo-read"></div><form id="photo-form" hidden></form><div id="photo-actions"><button class="outline" id="edit-photo">编辑照片信息</button><button class="text-button" id="set-cover">设为摄影集封面 ↗</button><a id="download-original" class="text-button">下载原片 ↗</a><button class="text-button danger" id="delete-photo">删除照片</button></div></aside></div></dialog>
-<dialog id="about-dialog"><div class="dialog-head"><span class="eyebrow">ABOUT THE ARCHIVE</span><button class="close" data-close aria-label="关闭">×</button></div><h2>留影，留一点空间。</h2><p>这是属于你的本地摄影档案。照片与信息保存在本机，不需要账号，也不会上传至云端。</p><p>导入 JPG、PNG、WebP 或 TIFF 时，留影会尝试读取 EXIF。缺失的参数可以补充，已有的信息也可以修改。HEIC 和 RAW 请先导出为 JPG。</p><p>GPS 显示为经纬度；你可以将地点改为熟悉的地名。应用不会向在线地图发送坐标。</p><p>点击「备份档案」可以导出原片、预览图和数据库。请定期备份。</p><small>QUIET FRAME · OPEN SOURCE · MIT LICENSE</small></dialog>
-<dialog id="confirm-dialog"><h2 id="confirm-title">确认删除？</h2><p id="confirm-copy"></p><div class="confirm-actions"><button class="outline" id="confirm-cancel">取消</button><button class="primary danger-bg" id="confirm-ok">删除</button></div></dialog>
-<input type="file" id="file-input" multiple accept="image/jpeg,image/png,image/webp,image/tiff" hidden><div id="toast" role="status" aria-live="polite"></div><script src="/static/app.js"></script></body></html>
+  <header class="sidebar">
+    <a class="brand" href="#" aria-label="Quiet Frame"><span>Quiet<br>Frame<span class="brand-dot">.</span></span><span class="brand-cn">留影</span></a>
+    <nav class="primary-nav" data-aria="navigation">
+      <a href="#" id="home-link" class="active"><span data-i18n="works"></span><span class="nav-count" id="nav-count">00</span></a>
+      <button id="about-button" data-i18n="about"></button>
+    </nav>
+    <nav class="series-nav" id="series-nav" data-aria="works"></nav>
+    <div class="sidebar-bottom">
+      <div class="theme-switch" data-aria="appearance"><button id="theme-light" data-theme-choice="light" aria-pressed="true"><i class="light-swatch"></i><span data-i18n="light"></span></button><button id="theme-dark" data-theme-choice="dark" aria-pressed="false"><i class="dark-swatch"></i><span data-i18n="dark"></span></button></div>
+      <div class="language" data-aria="language"><button id="lang-zh" lang="zh" aria-pressed="true">中文</button><span>/</span><button id="lang-en" lang="en" aria-pressed="false">EN</button></div>
+      <a class="backup" href="/api/backup" data-i18n="backup"></a>
+      <span class="local"><i></i><span data-i18n="local"></span></span>
+    </div>
+  </header>
+  <div class="content"><main id="main"></main><footer><span>© QUIET FRAME</span><span data-i18n="footer"></span><span id="footer-count"></span></footer></div>
+  <dialog id="album-dialog">
+    <form id="album-form">
+      <div class="dialog-head"><span class="eyebrow" data-i18n="collection"></span><button type="button" class="close" data-close data-aria="close">×</button></div>
+      <h2 id="album-form-heading"></h2>
+      <label><span data-i18n="albumTitle"></span><input name="title" data-placeholder="albumPlaceholder" required maxlength="200"></label>
+      <div class="form-row"><label><span data-i18n="location"></span><input name="location" data-placeholder="locationPlaceholder"></label><label><span data-i18n="date"></span><input name="date" type="date"></label></div>
+      <label><span data-i18n="description"></span><textarea name="description" rows="3" data-placeholder="descriptionPlaceholder"></textarea></label>
+      <button class="primary" type="submit"><span data-i18n="saveAlbum"></span><span>↗</span></button>
+    </form>
+  </dialog>
+  <dialog id="photo-dialog" class="photo-dialog">
+    <div class="lightbox">
+      <div class="photo-stage"><button class="close lightbox-close" data-close data-aria="close">×</button><button class="arrow prev" id="prev" data-aria="previous">←</button><img id="large-photo" alt=""><button class="arrow next" id="next" data-aria="next">→</button><span id="photo-counter"></span></div>
+      <aside><div class="dialog-head"><span class="eyebrow" data-i18n="photoDetails"></span></div><h2 id="photo-heading"></h2><div id="photo-read"></div><form id="photo-form" hidden></form><div id="photo-actions"><button class="outline" id="edit-photo" data-i18n="editPhoto"></button><button class="text-button" id="set-cover" data-i18n="setCover"></button><a id="download-original" class="text-button" data-i18n="download"></a><button class="text-button danger" id="delete-photo" data-i18n="deletePhoto"></button></div></aside>
+    </div>
+  </dialog>
+  <dialog id="about-dialog"><div class="dialog-head"><span class="eyebrow">QUIET FRAME / 留影</span><button class="close" data-close data-aria="close">×</button></div><h2 data-i18n="aboutTitle"></h2><p data-i18n="aboutIntro"></p><p data-i18n="aboutFormats"></p><p data-i18n="aboutGps"></p><p data-i18n="aboutBackup"></p><a href="https://github.com/kyrieslhe/quiet-frame" target="_blank" rel="noreferrer" class="about-source">GITHUB ↗</a><small>OPEN SOURCE · MIT LICENSE</small></dialog>
+  <dialog id="confirm-dialog"><h2 id="confirm-title"></h2><p id="confirm-copy"></p><div class="confirm-actions"><button class="outline" id="confirm-cancel" data-i18n="cancel"></button><button class="primary danger-bg" id="confirm-ok" data-i18n="delete"></button></div></dialog>
+  <input type="file" id="file-input" multiple accept="image/jpeg,image/png,image/webp,image/tiff" hidden>
+  <div id="toast" role="status" aria-live="polite"></div>
+  <script src="/static/i18n.js"></script><script src="/static/app.js"></script>
+</body>
+</html>

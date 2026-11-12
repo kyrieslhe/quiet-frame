@@ -2,7 +2,15 @@
 
 一个安静、私密的本地摄影档案。按每次拍摄整理摄影集，保留原片、地点与拍摄参数。
 
-![Quiet Frame preview](docs/preview.png)
+[English](README.en.md) · 中文
+
+浅色模式
+
+![Quiet Frame light preview](docs/preview.png)
+
+深色模式
+
+![Quiet Frame dark preview](docs/preview-dark.png)
 
 ## 开始使用
 
@@ -20,7 +28,7 @@
 2. 导入或拖入照片，支持一次多张（每批总量最多 512 MB）。
 3. 点击照片打开大图，查看或编辑拍摄信息；方向键切换照片，Esc 关闭。
 4. 可将任意照片设为封面，搜索摄影集，下载原片或删除本地档案副本。
-5. 点击右上角「备份档案」，下载含原片、预览图与数据库 SQL 的 ZIP。
+5. 点击左下角「备份档案」，下载含原片、预览图与数据库 SQL 的 ZIP。
 
 ### 文件与拍摄信息
 
@@ -51,9 +59,18 @@ python3 -c "import sqlite3,pathlib; p=pathlib.Path('restored'); c=sqlite3.connec
 
 将现有 `data/` 改名保留后，再把 `restored/` 改名为 `data/`。只恢复来自自己或信任来源的备份。为保证文件与数据库完全对应，请在导入、删除结束后再导出备份。大档案导出 ZIP 会占用额外内存；建议停止服务后直接复制 `data/`。
 
-## 设计
+## 设计与语言
 
-暖白纸色、墨绿灰文字、1px 分隔线。标题优先使用 Iowan Old Style / Baskerville / 宋体，正文使用系统无衬线字体；小字号英文索引与参数保持克制。摄影集采用统一封面比例，集内照片保持自身比例。支持窄屏、键盘导航和减少动画偏好。首屏为空白档案，不附带虚构个人作品。
+以照片为主体的作品集布局：左侧系列目录、大幅封面、画廊 / 索引切换；摄影集内支持组照 / 逐张浏览。大图使用暗色观看区，参数放在独立侧栏。窄屏时导航与主题开关移到顶部。
+
+- **中文 / English**：切换导航、表单、参数、提示、错误和删除确认，选择保存在本机。你输入的摄影集名称、地点和笔记保留原文。
+- **浅色 / 深色**：首次跟随系统，也可手动选择；选择会保留到下次打开。照片不应用主题滤镜。
+- 字体使用本机 Georgia / 宋体与 Helvetica / 苹方，不请求外部字体。
+- 首次使用展示一张明确标注的 Unsplash 示例图片；导入作品后由你的摄影集替代。示例不会写入数据库或冒充个人照片，拍摄参数也不会伪造。
+
+布局参考：[川内伦子](https://rinkokawauchi.com/works/)的系列导航、[Reuben Wu](https://reubenwu.com/)的图像布局、[Alan Schaller](https://www.alanschaller.com/)的大图观看，以及 [Alec Soth](https://alecsoth.com/photography/)的项目组织。未复制这些摄影师的照片。
+
+示例图片遵循 Unsplash License，详见 [第三方素材说明](THIRD_PARTY_NOTICES.md)。
 
 ## 本地开发
 
@@ -69,7 +86,7 @@ python -m unittest discover -s tests -v
 
 技术栈：Python / Flask / SQLite / Pillow / 原生 HTML、CSS、JavaScript。无前端构建步骤。
 
-测试覆盖 EXIF/GPS 读取、无 EXIF 图片、导入/编辑/删除、重启持久化、备份还原、无效文件与本地写入保护。macOS 浏览器流程另验证了新建集、上传、编辑、重载、手机排版与删除；Windows/Linux 启动脚本未在对应系统实测。
+测试覆盖 EXIF/GPS 读取、无 EXIF 图片、导入/编辑/删除、重启持久化、备份还原、无效文件与本地写入保护。macOS 浏览器流程另验证了新建集、上传、编辑、重载、手机排版、删除、中英文切换、草稿保留、画廊/索引/逐张浏览与主题持久化；Windows/Linux 启动脚本未在对应系统实测。
 
 ## 开源
 

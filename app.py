@@ -78,6 +78,9 @@ def create_app(data_dir=None):
         conn.executescript('''CREATE TABLE IF NOT EXISTS albums (id TEXT PRIMARY KEY, title TEXT NOT NULL, description TEXT DEFAULT '', location TEXT DEFAULT '', date TEXT DEFAULT '', created_at TEXT NOT NULL);
         CREATE TABLE IF NOT EXISTS photos (id TEXT PRIMARY KEY, album_id TEXT NOT NULL REFERENCES albums(id) ON DELETE CASCADE, filename TEXT NOT NULL, original_name TEXT NOT NULL, metadata TEXT NOT NULL, position INTEGER NOT NULL);''')
     token = secrets.token_urlsafe(32)
+    def tr(zh, en):
+        return en if request.headers.get('Accept-Language', '').startswith('en') else zh
+
     @app.before_request
     def local_only():
         if request.host.split(':')[0] not in ('127.0.0.1', 'localhost', '[::1]'):
@@ -86,10 +89,10 @@ def create_app(data_dir=None):
             abort(403)
     @app.errorhandler(413)
     def too_large(_):
-        return jsonify(error='一次导入总量请控制在 512 MB 以内。'), 413
+        return jsonify(error=tr('一次导入总量请控制在 512 MB 以内。', 'Please keep each import below 512 MB.')), 413
     @app.errorhandler(400)
     def bad_request(_):
-        return jsonify(error='请求格式不正确。'), 400
+        return jsonify(error=tr('请求格式不正确。', 'Invalid request format.')), 400
     @app.get('/')
     def index():
         return send_from_directory(app.static_folder, 'index.html')
@@ -107,7 +110,7 @@ def create_app(data_dir=None):
         body = request.get_json()
         title = str(body.get('title', '')).strip()
         if not title:
-            return jsonify(error='请填写摄影集名称。'), 400
+            return jsonify(error=tr('请填写摄影集名称。', 'Please enter a collection title.')), 400
         album_id = uuid4().hex
         with db() as conn:
             conn.execute('INSERT INTO albums VALUES (?,?,?,?,?,?)', (album_id, title[:200], str(body.get('description', ''))[:10000], str(body.get('location', ''))[:500], str(body.get('date', ''))[:40], datetime.now().isoformat()))
@@ -116,7 +119,7 @@ def create_app(data_dir=None):
     def edit_album(album_id):
         body = request.get_json()
         if not str(body.get('title', '')).strip():
-            return jsonify(error='请填写摄影集名称。'), 400
+            return jsonify(error=tr('请填写摄影集名称。', 'Please enter a collection title.')), 400
         with db() as conn:
             changed = conn.execute('UPDATE albums SET title=?, description=?, location=?, date=? WHERE id=?', tuple(str(body.get(k, ''))[:10000] for k in ('title', 'description', 'location', 'date')) + (album_id,)).rowcount
         if not changed:
@@ -144,7 +147,7 @@ def create_app(data_dir=None):
             try:
                 image = Image.open(file.stream)
                 if image.format not in ('JPEG', 'PNG', 'WEBP', 'TIFF'):
-                    raise ValueError('支持 JPG、PNG、WebP、TIFF；HEIC / RAW 请先导出为 JPG。')
+                    raise ValueError(tr('支持 JPG、PNG、WebP、TIFF；HEIC / RAW 请先导出为 JPG。', 'Supported formats: JPG, PNG, WebP, TIFF. Export HEIC / RAW as JPG first.'))
                 metadata = extract_metadata(image)
                 metadata.update(title=Path(file.filename or '未命名').stem, notes='')
                 thumb = ImageOps.exif_transpose(image)
@@ -167,7 +170,7 @@ def create_app(data_dir=None):
                 preview.unlink(missing_ok=True)
                 if original:
                     original.unlink(missing_ok=True)
-                errors.append(dict(filename=file.filename, error=str(exc) or '无法读取此图片'))
+                errors.append(dict(filename=file.filename, error=tr('无法读取此图片，请检查文件格式。', 'Cannot read this image. Please check the file format.') if isinstance(exc, UnidentifiedImageError) else str(exc) or tr('无法读取此图片', 'Cannot read this image')))
         return jsonify(added=added, errors=errors, error='；'.join(f"{e['filename']}：{e['error']}" for e in errors) if not added else ''), 201 if added else 400
     @app.patch('/api/photos/<photo_id>')
     def edit_photo(photo_id):

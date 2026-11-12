@@ -31,6 +31,13 @@ class ArchiveTests(unittest.TestCase):
         self.assertEqual(self.client.post('/api/albums',json={'title':'x'}).status_code,403)
         self.assertEqual(self.client.get('/api/albums',headers={'Host':'evil.example'}).status_code,403)
         aid=self.album();r=self.client.post(f'/api/albums/{aid}/photos',data={'photos':(io.BytesIO(b'bad'),'bad.jpg')},headers=self.headers);self.assertEqual(r.status_code,400);self.assertEqual(self.client.get('/api/albums').json[0]['photos'],[])
+    def test_english_errors(self):
+        headers={**self.headers, 'Accept-Language':'en'}
+        response=self.client.post('/api/albums',json={'title':''},headers=headers)
+        self.assertEqual(response.json['error'],'Please enter a collection title.')
+        aid=self.album()
+        response=self.client.post(f'/api/albums/{aid}/photos',data={'photos':(io.BytesIO(b'bad'),'bad.jpg')},headers=headers)
+        self.assertIn('Cannot read this image',response.json['error'])
     def test_missing_exif(self):
         image=io.BytesIO();Image.new('RGB',(100,100),'white').save(image,'PNG');image.seek(0);aid=self.album();pid=self.client.post(f'/api/albums/{aid}/photos',data={'photos':(image,'plain.png')},headers=self.headers).json['added'][0]
         self.assertEqual(self.client.get('/api/albums').json[0]['photos'][0]['camera'],'');self.client.delete(f'/api/photos/{pid}',headers=self.headers);self.assertEqual(self.client.get(f'/media/{pid}').status_code,404)
